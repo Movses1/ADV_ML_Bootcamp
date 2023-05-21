@@ -1,1 +1,3 @@
-I had an error while finding sigma for perplexity so this is the simpler version
+T_SNE implements the simple version
+
+T_SNE_sigmas implements the version where we use sigmas for each perplexity
