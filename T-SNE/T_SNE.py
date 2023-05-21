@@ -42,7 +42,7 @@ class T_SNE:
 
         for _ in range(self.max_iter):
             gradients = self._calculate_gradients(self.datapoints)
-            step = -gradients * self.l_r + self.acel * (self.datapoints - self.prev_state)
+            step = - gradients * self.l_r + self.acel * (self.datapoints - self.prev_state)
             self.prev_state = self.datapoints
 
             self.datapoints += step
