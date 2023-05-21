@@ -54,14 +54,19 @@ class T_SNE:
         os.system('cls')
         return 0
 
-    def _calculate_exp_probabilities(self, X):
+    def _calculate_probabilities(self, X, use_sigmas=False):
         self.D = distance_matrix(X, X)
-        prob = np.exp(-self.D ** 2 / (2 * self.sigmas[:, np.newaxis] ** 2))
-        prob = prob / prob.sum(axis=0)
-        return (prob + prob.T) / (2)  # *X.shape[0])
+        prob=0
+        if use_sigmas:
+            prob = np.exp(-self.D**2 / (2*self.sigmas[:,np.newaxis]**2))
+        else:
+            #prob = np.exp(-self.D**2)     # using stochastic distribution
+            prob = 1/(1+self.D**2)        # using student T_distribution
+        prob = prob/prob.sum(axis=0)
+        return (prob+prob.T)/(2)
 
-    def _calculate_exp_gradients(self, X):
-        q = self._calculate_exp_probabilities(X)
+    def _calculate_gradients(self, X):
+        q = self._calculate_probabilities(X)
         grads = []
         for i in range(X.shape[0]):
             # grad = 2 * np.sum(((self.p[i]-q[i]+self.p[:,i]-q[:,i])*self.D[i])[:,np.newaxis]*(X[i]-X), axis=0)
@@ -69,10 +74,10 @@ class T_SNE:
             grads.append(grad)
         return np.array(grads)
 
-    def fit_transform(self, X, do_exp=False, plot_learning=False, mnist_colors=False):
+    def fit_transform(self, X):
         self._bin_search_sigma(X)
 
-        self.p = self._calculate_exp_probabilities(X)
+        self.p = self._calculate_probabilities(X, use_sigmas=True)
 
         self.df_shape = (X.shape[0], self.n_components)
         np.random.seed(1)
@@ -80,7 +85,7 @@ class T_SNE:
         self.prev_state = self.datapoints
 
         for _ in range(self.max_iter):
-            gradients = self._calculate_exp_gradients(self.datapoints)
+            gradients = self._calculate_gradients(self.datapoints)
             step = -gradients * self.l_r + self.acel * (self.datapoints - self.prev_state)
             self.prev_state = self.datapoints
 
