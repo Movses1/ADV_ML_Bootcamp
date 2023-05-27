@@ -1,16 +1,19 @@
 from sklearn.datasets import load_diabetes
+from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 import numpy as np
 from model import Model
-from layers import DenseLayer
+from layers import DenseLayer, Dropout
 
 data = load_diabetes()
+# data = load_breast_cancer()
 x = data['data']
 y = data['target']
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
 
 model = Model([DenseLayer(neurons=x.shape[1], include_bias=False),
                DenseLayer(neurons=64, activation='relu'),
+               Dropout(0.2),
                DenseLayer(neurons=64, activation='relu'),
                DenseLayer(neurons=1)],
               )

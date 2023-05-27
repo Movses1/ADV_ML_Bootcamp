@@ -1,13 +1,19 @@
 import numpy as np
-from layers import DenseLayer
+from layers import DenseLayer, Dropout
+
 
 class Model:
     def __init__(self, layer_arr, loss='mse'):
         self.loss = loss
         prev_n = 0
+        drp_cnt = 0
         for ind, layer in enumerate(layer_arr):
             if ind != 0:
-                layer._init_weights(prev_n, ind)
+                if type(layer) is Dropout:
+                    layer.neurons = prev_n
+                    drp_cnt += 1
+                else:
+                    layer._init_weights(prev_n, ind - drp_cnt)
             prev_n = layer.neurons
         self.layers = layer_arr
 
@@ -23,7 +29,7 @@ class Model:
     def fit(self, X, Y, epochs=50, batch_size=32, lr=0.001):
         if len(Y.shape) == 1:
             Y = Y.reshape(-1, 1)
-        scaling_factor = X.shape[0]//32
+        scaling_factor = X.shape[0] // 32
 
         for _ in range(epochs):
             print('epoch', _, end=' ')
@@ -41,5 +47,5 @@ class Model:
 
                 for i in range(len(self.layers) - 1, 0, -1):
                     neuron_grads = self.layers[i]._backpropagate(neuron_grads)
-                    self.layers[i]._apply_grads(lr/scaling_factor)
+                    self.layers[i]._apply_grads(lr / scaling_factor)
             print('loss', losses / scaling_factor)

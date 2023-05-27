@@ -1,6 +1,30 @@
 import numpy as np
 
 
+class Dropout:
+    def __init__(self, rate=0.1, neurons=32):
+        self.rate = 0.1
+        self.scale = 1 / (1 - rate)
+        self.neurons = neurons
+        self.weights = 0
+
+    def _init_weights(self):
+        self.weights = np.random.rand(self.neurons) > self.rate
+        self.weights = self.weights * self.scale
+
+    def _feedforward(self, X, fitting=True):
+        if fitting:
+            self._init_weights()
+            return X * self.weights
+        return X
+
+    def _backpropagate(self, neuron_grads):
+        return neuron_grads  # * self.scale**(-1)
+
+    def _apply_grads(self, a):
+        return 0
+
+
 class DenseLayer:
     def __init__(self, activation='linear', neurons=64, include_bias=True):
         """
