@@ -21,8 +21,22 @@ class Dropout:
     def _backpropagate(self, neuron_grads):
         return neuron_grads  # * self.scale**(-1)
 
-    def _apply_grads(self, a):
-        return 0
+
+class BatchNormalization:
+    def __init__(self, neurons=32):
+        self.neurons = 32
+        self.min = 0
+        self.max = 0
+
+    def _feedforward(self, X):
+        self.min = np.min(X, axis=0)
+        X -= self.min
+        self.max = np.max(X, axis=0)
+        X /= (self.max + 1e-9)
+        return X
+
+    def _backpropagate(self, neuron_grads):
+        return neuron_grads * self.max
 
 
 class DenseLayer:

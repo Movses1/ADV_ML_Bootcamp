@@ -1,19 +1,19 @@
 import numpy as np
-from layers import DenseLayer, Dropout
+from layers import DenseLayer, Dropout, BatchNormalization
 
 
 class Model:
     def __init__(self, layer_arr, loss='mse'):
         self.loss = loss
         prev_n = 0
-        drp_cnt = 0
+        norm_cnt = 0
         for ind, layer in enumerate(layer_arr):
             if ind != 0:
-                if type(layer) is Dropout:
+                if type(layer) in [Dropout, BatchNormalization]:
                     layer.neurons = prev_n
-                    drp_cnt += 1
+                    norm_cnt += 1
                 else:
-                    layer._init_weights(prev_n, ind - drp_cnt)
+                    layer._init_weights(prev_n, ind - norm_cnt)
             prev_n = layer.neurons
         self.layers = layer_arr
 
@@ -47,5 +47,6 @@ class Model:
 
                 for i in range(len(self.layers) - 1, 0, -1):
                     neuron_grads = self.layers[i]._backpropagate(neuron_grads)
-                    self.layers[i]._apply_grads(lr / scaling_factor)
+                    if type(self.layers[i]) not in [Dropout, BatchNormalization]:
+                        self.layers[i]._apply_grads(lr / scaling_factor)
             print('loss', losses / scaling_factor)
