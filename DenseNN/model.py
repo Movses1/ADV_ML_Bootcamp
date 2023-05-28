@@ -32,7 +32,7 @@ class Model:
     def fit(self, X, Y, epochs=50, batch_size=32, lr=0.001):
         if len(Y.shape) == 1:
             Y = Y.reshape(-1, 1)
-        scaling_factor = X.shape[0] // batch_size #num of batches
+        scaling_factor = X.shape[0] // batch_size  # num of batches
 
         for _ in range(epochs):
             print('epoch', _, end=' ')
@@ -50,7 +50,7 @@ class Model:
                 elif self.loss == 'bce':
                     epsilon = 1e-7
                     neuron_grads = (-Y[indx] / (ans + epsilon) + (1 - Y[indx]) / (1 - ans + epsilon)) / 2
-                    losses -= np.mean(Y[indx] * np.log(ans + epsilon) + (1 - Y[indx]) * np.log(1 - ans + epsilon))
+                    losses -= np.mean(Y[indx] * np.log(ans + epsilon) + (1 - Y[indx]) * np.log(1 - ans + epsilon)) / 2
 
                 for i in range(len(self.layers) - 1, 0, -1):
                     neuron_grads = self.layers[i]._backpropagate(neuron_grads)

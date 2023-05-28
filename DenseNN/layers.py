@@ -1,5 +1,7 @@
 import numpy as np
 
+np.random.seed(1)
+
 
 class Dropout:
     def __init__(self, rate=0.1, neurons=32):
