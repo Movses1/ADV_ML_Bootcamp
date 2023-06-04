@@ -7,7 +7,7 @@ from layers import DenseLayer, Dropout
 from sklearn.metrics import roc_curve
 from matplotlib import pyplot as plt
 
-reg = False       # control regression or classification problem
+reg = True       # control regression or classification problem
 last_layer = 0
 loss = 0
 if reg:
@@ -31,7 +31,7 @@ model = Model([DenseLayer(neurons=x.shape[1], include_bias=False),
                last_layer],  # classification
               loss=our_loss,
               )
-model.fit(X_train, y_train, epochs=20, batch_size=32, lr=0.001)
+model.fit(X_train, y_train, epochs=40, batch_size=32, lr=0.001)
 preds = model.predict(X_test)
 preds1 = model.predict(X_train)
 

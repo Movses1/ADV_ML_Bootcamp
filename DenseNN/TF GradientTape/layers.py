@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from optimizers import Adam
 
 
 class Dropout:
@@ -53,12 +54,14 @@ class DenseLayer:
         Xavier Glorot initialization
         """
         std = inp_size ** (-layer_indx / 2)
+        self.w_adm = Adam(shape=(inp_size, self.neurons))
         self.weights = np.random.normal(0, std, size=(inp_size, self.neurons))
         self.weights = tf.Variable(self.weights,
                                    dtype=tf.float64,
                                    name=f'W{indx}',
                                    trainable=True)
         if self.include_bias:
+            self.b_adm = Adam(shape=(self.neurons,))
             self.bias = tf.Variable(tf.zeros(shape=(self.neurons,), dtype=tf.float64),
                                     name=f'B{indx}',
                                     trainable=True)
@@ -82,7 +85,7 @@ class DenseLayer:
 
     def _apply_grads(self, lr, grads):
         if self.include_bias:
-            self.weights.assign_sub(lr * grads[0])
-            self.bias.assign_sub(lr * grads[1])
+            self.weights.assign_sub(self.w_adm(grads[0], lr))
+            self.bias.assign_sub(self.b_adm(grads[1], lr))
         else:
-            self.weights.assign_sub(lr * grads)
+            self.weights.assign_sub(self.w_adm(grads, lr))
