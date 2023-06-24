@@ -17,6 +17,7 @@ class Model:
                     norm_cnt += 1
                 else:
                     layer._init_weights(prev_n, ind - norm_cnt)
+                #print(layer.weights.shape)
             prev_n = layer.neurons
         self.layers = layer_arr
 
@@ -32,7 +33,7 @@ class Model:
     def fit(self, X, Y, epochs=50, batch_size=32, lr=0.001):
         if len(Y.shape) == 1:
             Y = Y.reshape(-1, 1)
-        scaling_factor = X.shape[0] // batch_size  # num of batches
+        # scaling_factor = X.shape[0] // batch_size  # num of batches
 
         for _ in range(epochs):
             print('epoch', _, end=' ')
@@ -55,5 +56,5 @@ class Model:
                 for i in range(len(self.layers) - 1, 0, -1):
                     neuron_grads = self.layers[i]._backpropagate(neuron_grads)
                     if type(self.layers[i]) not in [Dropout, BatchNormalization]:
-                        self.layers[i]._apply_grads(lr / scaling_factor)
-            print('loss', losses / scaling_factor)
+                        self.layers[i]._apply_grads(lr)  # / scaling_factor)
+            print('loss', losses)  # / scaling_factor)
