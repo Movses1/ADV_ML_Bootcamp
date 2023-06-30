@@ -7,7 +7,7 @@ from layers import DenseLayer, Dropout, InpLayer
 from sklearn.metrics import roc_curve
 from matplotlib import pyplot as plt
 
-reg = False       # control regression or classification problem
+reg = True       # control regression or classification problem
 last_layer = 0
 loss = 0
 if reg:
@@ -40,9 +40,9 @@ if reg:
     print('test mse =', np.mean((preds - y_test) ** 2), 'mae =', np.mean(np.abs(preds - y_test)))
 
 else:
-    roc = roc_curve(y_test, preds)
-    plt.plot(roc[0], roc[1], label='test')
     roc = roc_curve(y_train, preds1)
     plt.plot(roc[0], roc[1], label='train')
+    roc = roc_curve(y_test, preds)
+    plt.plot(roc[0], roc[1], label='test')
     plt.legend()
     plt.show()

@@ -219,36 +219,46 @@ class Conv2D:
         self.weights = []
         self.neurons = []  # represents the output size
 
+        self.inp_history = []
+        self.ans_history = []
+
+    def _reset_grads(self):
+        self.weight_grads = np.zeros(self.weights.shape)
+        if self.include_bias:
+            self.bias_grads = np.zeros(self.filters)
+
     def _init_weights(self, inp_size, layer_indx):
         self.height = np.arange(0, inp_size[0] - self.kernel_size[0] + 1, self.stride[0])
         self.width = np.arange(0, inp_size[1] - self.kernel_size[1] + 1, self.stride[1])
         self.neurons = np.array([len(self.height), len(self.width), self.filters])  # output size
 
-        out_size=(len(self.height)*len(self.width))
-        self.weights = init_weights(self.kernel_size + (inp_size[2], self.filters), inp_size, out_size, layer_indx,
-                                    self.kernel_initializer)
+        self.weights = init_weights(self.kernel_size + (inp_size[2], self.filters), inp_size, self.neurons.prod(),
+                                    layer_indx, self.kernel_initializer)
         self.w_adm = Adam(shape=self.weights.shape)
 
         if self.include_bias:
             self.bias = np.zeros(self.filters)
             self.b_adm = Adam(shape=(self.bias.shape))
+        self._reset_grads()
 
     def _feedforward(self, inp):
         """
         inp has shape (batch, h, w, d)
         out has shape (batch, h, w, f)
         """
-        self.inp = inp[:, :, :, :, np.newaxis]
-        self.ans = np.zeros((inp.shape[0], len(self.height), len(self.width), self.filters))
-        for h in self.height:
-            for w in self.width:
-                inp1 = self.inp[:, h:h + self.kernel_size[0], w:w + self.kernel_size[1], :, :]
+        inp = inp[:, :, :, :, np.newaxis]
+        ans = np.zeros(np.append(inp.shape[0], self.neurons))
+        for h_o, h in enumerate(self.height):
+            for w_o, w in enumerate(self.width):
+                inp1 = inp[:, h:h + self.kernel_size[0], w:w + self.kernel_size[1], :, :]
                 ans1 = (inp1 * self.weights).sum(axis=(1, 2, 3))
                 if self.include_bias:
                     ans1 += self.bias
-                self.ans[:, h, w, :] = ans1
+                ans[:, h_o, w_o, :] = ans1
 
-        return apply_activation(self.ans, self.activation)
+        self.inp_history.append(inp)
+        self.ans_history.append(ans)
+        return apply_activation(ans, self.activation)
 
     def _backpropagate(self, neuron_grads):
         """
@@ -256,24 +266,25 @@ class Conv2D:
          return shape (batch, h, w, f)
         """
         if len(neuron_grads.shape) == 2:
-            neuron_grads = neuron_grads.reshape(
-                (neuron_grads.shape[0], len(self.height), len(self.width), self.filters))
-        neuron_grads *= apply_derivative(self.ans, self.activation)
+            neuron_grads = neuron_grads.reshape(np.append(neuron_grads.shape[0], self.neurons))
+        neuron_grads *= apply_derivative(self.ans_history[-1], self.activation)
 
-        inp_grads = np.zeros(self.inp.shape[:-1])
-        self.weight_grads = np.zeros(self.weights.shape)
+        inp_grads = np.zeros(self.inp_history[-1].shape[:-1])
+
         if self.include_bias:
-            self.bias_grads = neuron_grads.mean(axis=0).sum(axis=(0, 1,))
+            self.bias_grads += neuron_grads.mean(axis=0).sum(axis=(0, 1,))
 
         for h_o, h in enumerate(self.height):
             for w_o, w in enumerate(self.width):
                 self.weight_grads += (
-                        neuron_grads[:, h_o:h_o + 1, w_o:w_o + 1, np.newaxis, :] * self.inp[:,
+                        neuron_grads[:, h_o:h_o + 1, w_o:w_o + 1, np.newaxis, :] * self.inp_history[-1][:,
                                                                                    h:h + self.kernel_size[0],
-                                                                                   w:w + self.kernel_size[1], :]).mean(
-                    axis=0)
+                                                                                   w:w + self.kernel_size[1],
+                                                                                   :, :]).mean(axis=0)
                 inp_grads[:, h:h + self.kernel_size[0], w:w + self.kernel_size[1], :] += (
                         neuron_grads[:, h_o:h_o + 1, w_o:w_o + 1, np.newaxis, :] * self.weights).sum(axis=-1)
+        self.inp_history.pop()
+        self.ans_history.pop()
 
         return inp_grads
 
@@ -281,6 +292,7 @@ class Conv2D:
         self.weights -= self.w_adm(self.weight_grads, lr)
         if self.include_bias:
             self.bias -= self.b_adm(self.bias_grads, lr)
+        self._reset_grads()
 
 
 class DenseLayer:
@@ -296,18 +308,27 @@ class DenseLayer:
         if self.include_bias:
             self.bias = []
 
+        self.inp_history = []
+        self.ans_history = []
+
+    def _reset_grads(self):
+        self.weight_grads = np.zeros(self.weights.shape)
+        if self.include_bias:
+            self.bias_grads = np.zeros(self.neurons)
+
     def _init_weights(self, inp_size, layer_indx):
         if type(inp_size) is np.ndarray:
             inp_size = inp_size.prod()
 
         self.weights = init_weights((inp_size, self.neurons), inp_size, self.neurons, layer_indx,
                                     self.kernel_initializer)
+        self.w_adm = Adam(shape=self.weights.shape)
 
         if self.include_bias:
             self.bias = np.zeros(self.neurons)
             self.b_adm = Adam(shape=self.bias.shape)
 
-        self.w_adm = Adam(shape=self.weights.shape)
+        self._reset_grads()
 
     def _feedforward(self, inp):
         """
@@ -319,18 +340,23 @@ class DenseLayer:
         ans = inp @ self.weights
         if self.include_bias:
             ans += self.bias
-        self.inp = inp
-        self.ans = ans
 
-        return apply_activation(self.ans, self.activation)
+        self.inp_history.append(inp)
+        self.ans_history.append(ans)
+        return apply_activation(ans, self.activation)
 
     def _backpropagate(self, neuron_grads):
-        neuron_grads *= apply_derivative(self.ans, self.activation)
+        neuron_grads *= apply_derivative(self.ans_history[-1], self.activation)
 
-        self.weight_grads = self.inp.reshape(self.inp.shape + (1,)) @ neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
-        self.weight_grads = self.weight_grads.mean(axis=0)
+        g = self.inp_history[-1].reshape(self.inp_history[-1].shape + (1,)) @ \
+            neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
+        self.weight_grads += g.mean(axis=0)
+        self.weight_grads += self.weight_grads.mean(axis=0)
         if self.include_bias:
-            self.bias_grads = neuron_grads.mean(axis=0)
+            self.bias_grads += neuron_grads.mean(axis=0)
+
+        self.inp_history.pop()
+        self.ans_history.pop()
 
         return neuron_grads @ self.weights.T
 
@@ -338,3 +364,4 @@ class DenseLayer:
         self.weights -= self.w_adm(self.weight_grads, lr)
         if self.include_bias:
             self.bias -= self.b_adm(self.bias_grads, lr)
+        self._reset_grads()
