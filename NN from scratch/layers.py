@@ -2,7 +2,7 @@ import numpy as np
 from optimizers import Adam
 
 # np.random.seed(2)
-epsilon = 1e-7
+epsilon = 1e-8
 
 
 class Dropout:
@@ -27,7 +27,7 @@ class Dropout:
 
 class BatchNormalization:
     def __init__(self, neurons=32):
-        self.neurons = 32
+        self.neurons = neurons
         self.min = 0
         self.max = 0
 
@@ -51,7 +51,7 @@ def relu_derivative(X):
 
 
 def sigmoid(X):
-    return 1 / (1 + np.exp(-X))
+    return 1 / (1 + np.exp(-X) + epsilon)
 
 
 def sigmoid_derivative(X):
@@ -62,7 +62,6 @@ def sigmoid_derivative(X):
 def softmax(X):
     exps = np.exp(X)
     sm = exps.sum(axis=tuple(np.arange(1, len(X.shape))))
-    # print(sm.reshape(sm.shape+tuple(1 for _ in exps.shape[1:])))
     return exps / (sm.reshape(sm.shape + tuple(1 for _ in exps.shape[1:])) + epsilon)
 
 
@@ -103,6 +102,18 @@ def apply_derivative(X, activation):
     return 1
 
 
+def init_weights(weight_shape, inp_size, layer_indx, kernel_initializer='glorot_uniform'):
+    if kernel_initializer == 'glorot_uniform':
+        std = np.sqrt(1 / np.sum(weight_shape))
+        return np.random.uniform(-std, std, size=weight_shape)
+    elif kernel_initializer == 'he_normal':
+        std = np.sqrt(1 / np.prod(inp_size))
+        return np.random.normal(0, std, size=weight_shape)
+    elif kernel_initializer == 'xavier_orig':
+        std = 1 / (np.prod(inp_size) ** (layer_indx - 1))
+        return np.random.normal(0, std, size=weight_shape)
+
+
 class InpLayer:
     def __init__(self, shape):
         self.neurons = shape
@@ -112,8 +123,9 @@ class InpLayer:
 
 
 class RNN:
-    def __init__(self, activation='tanh', neurons=20, include_bias=True):
+    def __init__(self, activation='tanh', neurons=20, include_bias=True, k_init='glorot_uniform'):
         self.activation = activation
+        self.kernel_initializer = k_init
         self.neurons = neurons
         self.include_bias = include_bias
         self.weights_inp = []
@@ -138,10 +150,9 @@ class RNN:
         if type(inp_size) is np.ndarray:
             inp_size = inp_size.prod()
 
-        std_inp = np.sqrt(1 / (inp_size + self.neurons))
-        std_h = np.sqrt(0.5 / self.neurons)
-        self.weights_inp = np.random.uniform(-std_inp, std_inp, size=(inp_size, self.neurons))
-        self.weights_h = np.random.uniform(-std_h, std_h, size=(self.neurons, self.neurons))
+        self.weights_inp = init_weights((inp_size, self.neurons), inp_size, layer_indx, self.kernel_initializer)
+        self.weights_h = init_weights((self.neurons, self.neurons), self.neurons, layer_indx, self.kernel_initializer)
+
         if self.include_bias:
             self.bias = np.zeros(self.neurons)
 
@@ -195,8 +206,10 @@ class RNN:
 
 
 class Conv2D:
-    def __init__(self, activation='linear', kernel_size=(3, 3), stride=(1, 1), filters=10, include_bias=True):
+    def __init__(self, activation='linear', kernel_size=(3, 3), stride=(1, 1), filters=10, include_bias=True,
+                 k_init='glorot_uniform'):
         self.activation = activation
+        self.kernel_initializer = k_init
         self.kernel_size = kernel_size
         self.stride = stride
         self.filters = filters
@@ -209,16 +222,10 @@ class Conv2D:
         self.width = np.arange(0, inp_size[1] - self.kernel_size[1] + 1, self.stride[1])
         self.neurons = np.array([len(self.height), len(self.width), self.filters])  # output size
 
-        # std = inp_size.prod() ** (-layer_indx / 2)                  # xavier Glorot
-        # std = np.sqrt(2 / (inp_size.prod() + self.neurons.prod()))  # Glorot uniform
-        std = np.sqrt(1 / inp_size.prod())  # He normal
-
-        # weight dimensions is (h, w, d, filters)
-        # self.weights = np.random.normal(0, std, size=(self.kernel_size + (inp_size[2], self.filters)))
-        self.weights = np.random.uniform(-std, std, size=(self.kernel_size + (inp_size[2], self.filters)))
+        self.weights = init_weights(self.kernel_size + (inp_size[2], self.filters), inp_size, layer_indx,
+                                    self.kernel_initializer)
         self.w_adm = Adam(shape=self.weights.shape)
 
-        # print(self.weights.shape)
         if self.include_bias:
             self.bias = np.zeros(self.filters)
             self.b_adm = Adam(shape=(self.bias.shape))
@@ -274,11 +281,12 @@ class Conv2D:
 
 
 class DenseLayer:
-    def __init__(self, activation='linear', neurons=64, include_bias=True):
+    def __init__(self, activation='linear', neurons=64, include_bias=True, k_init='glorot_uniform'):
         """
         activation can be: 'relu', 'sigmoid' everything else is treated as 'linear'
         """
         self.neurons = neurons
+        self.kernel_initializer = k_init
         self.include_bias = include_bias
         self.activation = activation
         self.weights = []
@@ -289,14 +297,10 @@ class DenseLayer:
         if type(inp_size) is np.ndarray:
             inp_size = inp_size.prod()
 
-        # std = inp_size ** (-layer_indx / 2)         # xavier glorot
-        std = np.sqrt(1 / (inp_size + self.neurons))  # glorot uniform
-
-        # self.weights = np.random.normal(0, std, size=(inp_size, self.neurons))
-        self.weights = np.random.uniform(-std, std, size=(inp_size, self.neurons))
+        self.weights = init_weights((inp_size, self.neurons), inp_size, layer_indx,
+                                    self.kernel_initializer)
 
         if self.include_bias:
-            # self.weights = np.append(self.weights, np.zeros((1, self.neurons)), axis=0)
             self.bias = np.zeros(self.neurons)
             self.b_adm = Adam(shape=self.bias.shape)
 

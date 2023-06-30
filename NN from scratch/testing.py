@@ -7,15 +7,15 @@ from layers import DenseLayer, Dropout, InpLayer
 from sklearn.metrics import roc_curve
 from matplotlib import pyplot as plt
 
-reg = True       # control regression or classification problem
+reg = False       # control regression or classification problem
 last_layer = 0
 loss = 0
 if reg:
-    last_layer = DenseLayer(neurons=1)
+    last_layer = DenseLayer(neurons=1, k_init='he_normal')
     our_loss = 'mse'
     data = load_diabetes()
 else:
-    last_layer = DenseLayer(neurons=1, activation='sigmoid')
+    last_layer = DenseLayer(neurons=1, activation='sigmoid', k_init='xavier_orig')
     our_loss = 'bce'
     data = load_breast_cancer()
 
@@ -24,10 +24,10 @@ y = data['target']
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
 
 model = Model([InpLayer(shape=x.shape[1]),
-               DenseLayer(neurons=64, activation='relu'),
+               DenseLayer(neurons=64, activation='relu', k_init='he_normal'),
                Dropout(0.1),
-               DenseLayer(neurons=64, activation='relu'),
-               DenseLayer(neurons=64, activation='relu'),
+               DenseLayer(neurons=64, activation='relu', k_init='he_normal'),
+               DenseLayer(neurons=64, activation='relu', k_init='he_normal'),
                last_layer],  # classification
               loss=our_loss,
               )

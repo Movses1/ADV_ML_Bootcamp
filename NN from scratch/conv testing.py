@@ -16,11 +16,12 @@ y[np.arange(y1.size), y1] = 1
 
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
 
+# initializer - glorot_uniform, he_normal, xavier_orig
 model = Model([InpLayer(shape=np.array([8, 8, 1])),
-               Conv2D(kernel_size=(3, 3), stride=(1, 1), filters=10, activation='relu'),
-               Conv2D(kernel_size=(3, 3), stride=(1, 1), filters=5, activation='relu'),
-               DenseLayer(neurons=50, activation='relu'),
-               DenseLayer(neurons=class_cnt, activation='softmax')],  # classification
+               Conv2D(kernel_size=(3, 3), stride=(1, 1), filters=10, activation='relu', k_init='he_normal'),
+               Conv2D(kernel_size=(3, 3), stride=(1, 1), filters=5, activation='relu', k_init='he_normal'),
+               DenseLayer(neurons=50, activation='relu', k_init='he_normal'),
+               DenseLayer(neurons=class_cnt, activation='softmax', k_init='glorot_uniform')],  # classification
               loss='cce',
               )
 
