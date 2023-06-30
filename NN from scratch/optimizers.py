@@ -10,7 +10,7 @@ class Adam:
         self.v = np.zeros(shape)
         self.r = np.zeros(shape)
 
-    def __call__(self, grad, lr=0.01):
+    def __call__(self, grad, lr=0.001):
         self.v = self.beta1 * self.v + (1 - self.beta1) * grad
         self.r = self.beta2 * self.r + (1 - self.beta2) * grad ** 2
 
@@ -19,5 +19,5 @@ class Adam:
         self.beta1_deg *= self.beta1
         self.beta2_deg *= self.beta2
 
-        eps = 1e-7
+        eps = 1e-8
         return lr * v_hat / (np.sqrt(r_hat) + eps)

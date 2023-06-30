@@ -282,6 +282,8 @@ class DenseLayer:
         self.include_bias = include_bias
         self.activation = activation
         self.weights = []
+        if self.include_bias:
+            self.bias = []
 
     def _init_weights(self, inp_size, layer_indx):
         if type(inp_size) is np.ndarray:
@@ -294,7 +296,9 @@ class DenseLayer:
         self.weights = np.random.uniform(-std, std, size=(inp_size, self.neurons))
 
         if self.include_bias:
-            self.weights = np.append(self.weights, np.zeros((1, self.neurons)), axis=0)
+            # self.weights = np.append(self.weights, np.zeros((1, self.neurons)), axis=0)
+            self.bias = np.zeros(self.neurons)
+            self.b_adm = Adam(shape=self.bias.shape)
 
         self.w_adm = Adam(shape=self.weights.shape)
 
@@ -304,10 +308,10 @@ class DenseLayer:
         """
         if len(inp.shape) > 2:
             inp = inp.reshape(inp.shape[0], -1)
-        if self.include_bias:
-            inp = np.insert(inp, -1, 1, axis=-1)
 
         ans = inp @ self.weights
+        if self.include_bias:
+            ans += self.bias
         self.inp = inp
         self.ans = ans
 
@@ -316,12 +320,14 @@ class DenseLayer:
     def _backpropagate(self, neuron_grads):
         neuron_grads *= apply_derivative(self.ans, self.activation)
 
-        self.grads = self.inp.reshape(self.inp.shape + (1,)) @ neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
-        self.grads = self.grads.mean(axis=0)
-
+        self.weight_grads = self.inp.reshape(self.inp.shape + (1,)) @ neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
+        self.weight_grads = self.weight_grads.mean(axis=0)
         if self.include_bias:
-            return neuron_grads @ self.weights[:-1].T
+            self.bias_grads = neuron_grads.mean(axis=0)
+
         return neuron_grads @ self.weights.T
 
     def _apply_grads(self, lr):
-        self.weights -= self.w_adm(self.grads, lr)
+        self.weights -= self.w_adm(self.weight_grads, lr)
+        if self.include_bias:
+            self.bias -= self.b_adm(self.bias_grads, lr)
