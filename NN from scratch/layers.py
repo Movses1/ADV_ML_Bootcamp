@@ -12,18 +12,17 @@ class Dropout:
         self.neurons = neurons
         self.weights = 0
 
-    def _init_weights(self):
-        self.weights = np.random.rand(self.neurons) > self.rate
-        self.weights = self.weights * self.scale
+    def _init_weights(self, neurons):
+        self.neurons = neurons
+        self.weights = np.random.uniform(size=self.neurons) > self.rate
+        self.scale = np.prod(neurons) / self.weights.sum()
 
-    def _feedforward(self, X, fitting=True):
-        if fitting:
-            self._init_weights()
-            return X * self.weights
-        return X
+    def _feedforward(self, X):
+        self._init_weights(X.shape[1:])
+        return X * self.weights * self.scale
 
     def _backpropagate(self, neuron_grads):
-        return neuron_grads  # * self.scale**(-1)
+        return neuron_grads * self.weights  # * self.scale**(-1)
 
 
 class BatchNormalization:

@@ -1,6 +1,7 @@
 import numpy as np
 from layers import DenseLayer, Dropout, BatchNormalization
 
+#np.random.seed(2)
 
 def calculate_loss(y_true, y_pred, loss='mse'):
     """
@@ -13,7 +14,7 @@ def calculate_loss(y_true, y_pred, loss='mse'):
 
     if loss == 'mse':
         n_g = 2 * (y_pred - y_true) / y_true.shape[1]
-        l = np.mean((y_pred - y_true) ** 2 / y_true.shape[1])
+        l = np.mean((y_pred - y_true) ** 2)
     elif loss == 'bce':
         n_g = (-y_true / (y_pred + epsilon) + (1 - y_true) / (1 - y_pred + epsilon)) / 2
         l = -np.mean(y_true * np.log(y_pred + epsilon) + (1 - y_true) * np.log(1 - y_pred + epsilon)) / 2
@@ -23,7 +24,7 @@ def calculate_loss(y_true, y_pred, loss='mse'):
         sm = sm.reshape(sm.shape + tuple(1 for _ in div.shape[1:]))
         n_g = -div + (sm - div)
         l = -np.sum(y_true * np.log(y_pred))"""
-        n_g = y_pred-y_true
+        n_g = y_pred - y_true
         l = -np.sum(y_true * np.log(y_pred))
 
     return n_g, l
@@ -48,13 +49,16 @@ class Model:
             prev_n = layer.neurons
         self.layers = layer_arr
 
-    def predict(self, X):
+    def predict(self, X, fitting=False):
         ans = X
         if len(X.shape) == 1:
             ans = ans.reshape(1, -1)
 
-        for l in range(1, len(self.layers)):
-            ans = self.layers[l]._feedforward(ans)
+        for l in self.layers[1:]:
+            if type(l) is Dropout and not fitting:
+                continue
+            else:
+                ans = l._feedforward(ans)
         return np.array(ans)
 
     def fit(self, X, Y, epochs=50, batch_size=32, lr=0.001):
@@ -70,7 +74,7 @@ class Model:
             np.random.shuffle(indxs)
             for j in range(0, X.shape[0], batch_size):
                 indx = indxs[j:j + batch_size]
-                ans = self.predict(X[indx])
+                ans = self.predict(X[indx], fitting=True)
 
                 n_g, l = calculate_loss(Y[indx], ans, self.loss)
                 neuron_grads = n_g

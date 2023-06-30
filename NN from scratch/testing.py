@@ -7,7 +7,7 @@ from layers import DenseLayer, Dropout, InpLayer
 from sklearn.metrics import roc_curve
 from matplotlib import pyplot as plt
 
-reg = False       # control regression or classification problem
+reg = True       # control regression or classification problem
 last_layer = 0
 loss = 0
 if reg:
@@ -25,7 +25,7 @@ X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_
 
 model = Model([InpLayer(shape=x.shape[1]),
                DenseLayer(neurons=64, activation='relu'),
-               Dropout(0.2),
+               Dropout(0.1),
                DenseLayer(neurons=64, activation='relu'),
                DenseLayer(neurons=64, activation='relu'),
                last_layer],  # classification
@@ -36,8 +36,8 @@ preds = model.predict(X_test)
 preds1 = model.predict(X_train)
 
 if reg:
-    print('train mse =', np.mean(((preds1 - y_train) ** 2)), 'mae =', np.mean(np.abs(preds1 - y_train)))
-    print('test mse =', np.mean(((preds - y_test) ** 2)), 'mae =', np.mean(np.abs(preds - y_test)))
+    print('train mse =', np.mean((preds1 - y_train) ** 2), 'mae =', np.mean(np.abs(preds1 - y_train)))
+    print('test mse =', np.mean((preds - y_test) ** 2), 'mae =', np.mean(np.abs(preds - y_test)))
 
 else:
     roc = roc_curve(y_test, preds)
