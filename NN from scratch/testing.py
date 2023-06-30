@@ -31,7 +31,7 @@ model = Model([InpLayer(shape=x.shape[1]),
                last_layer],  # classification
               loss=our_loss,
               )
-model.fit(X_train, y_train, epochs=20, batch_size=32, lr=0.001)
+model.fit(X_train, y_train, epochs=40, batch_size=32, lr=0.001)
 preds = model.predict(X_test)
 preds1 = model.predict(X_train)
 
