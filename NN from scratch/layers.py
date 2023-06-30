@@ -252,7 +252,8 @@ class Conv2D:
 
         inp_grads = np.zeros(self.inp.shape[:-1])
         self.weight_grads = np.zeros(self.weights.shape)
-        self.bias_grads = neuron_grads.mean(axis=0).sum(axis=(0, 1,))
+        if self.include_bias:
+            self.bias_grads = neuron_grads.mean(axis=0).sum(axis=(0, 1,))
 
         for h_o, h in enumerate(self.height):
             for w_o, w in enumerate(self.width):
@@ -268,7 +269,8 @@ class Conv2D:
 
     def _apply_grads(self, lr):
         self.weights -= self.w_adm(self.weight_grads, lr)
-        self.bias -= self.b_adm(self.bias_grads, lr)
+        if self.include_bias:
+            self.bias -= self.b_adm(self.bias_grads, lr)
 
 
 class DenseLayer:
