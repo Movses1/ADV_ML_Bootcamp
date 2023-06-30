@@ -1,8 +1,9 @@
 import numpy as np
 from optimizers import Adam
 
-#np.random.seed(2)
-epsilon=1e-7
+# np.random.seed(2)
+epsilon = 1e-7
+
 
 class Dropout:
     def __init__(self, rate=0.1, neurons=32):
@@ -62,8 +63,8 @@ def sigmoid_derivative(X):
 def softmax(X):
     exps = np.exp(X)
     sm = exps.sum(axis=tuple(np.arange(1, len(X.shape))))
-    #print(sm.reshape(sm.shape+tuple(1 for _ in exps.shape[1:])))
-    return exps / (sm.reshape(sm.shape+tuple(1 for _ in exps.shape[1:]))+epsilon)
+    # print(sm.reshape(sm.shape+tuple(1 for _ in exps.shape[1:])))
+    return exps / (sm.reshape(sm.shape + tuple(1 for _ in exps.shape[1:])) + epsilon)
 
 
 def softmax_derivative(X):
@@ -211,7 +212,7 @@ class Conv2D:
 
         # std = inp_size.prod() ** (-layer_indx / 2)                  # xavier Glorot
         # std = np.sqrt(2 / (inp_size.prod() + self.neurons.prod()))  # Glorot uniform
-        std = np.sqrt(1/inp_size.prod())                            # He normal
+        std = np.sqrt(1 / inp_size.prod())  # He normal
 
         # weight dimensions is (h, w, d, filters)
         # self.weights = np.random.normal(0, std, size=(self.kernel_size + (inp_size[2], self.filters)))
@@ -233,7 +234,9 @@ class Conv2D:
         for h in self.height:
             for w in self.width:
                 inp1 = self.inp[:, h:h + self.kernel_size[0], w:w + self.kernel_size[1], :, :]
-                ans1 = (inp1 * self.weights + self.bias).sum(axis=(1, 2, 3))
+                ans1 = (inp1 * self.weights).sum(axis=(1, 2, 3))
+                if self.include_bias:
+                    ans1 += self.bias
                 self.ans[:, h, w, :] = ans1
 
         return apply_activation(self.ans, self.activation)
@@ -250,7 +253,7 @@ class Conv2D:
 
         inp_grads = np.zeros(self.inp.shape[:-1])
         self.weight_grads = np.zeros(self.weights.shape)
-        self.bias_grads = neuron_grads.sum(axis=(0, 1, 2))
+        self.bias_grads = neuron_grads.mean(axis=0).sum(axis=(0, 1,))
 
         for h_o, h in enumerate(self.height):
             for w_o, w in enumerate(self.width):
@@ -267,8 +270,6 @@ class Conv2D:
     def _apply_grads(self, lr):
         self.weights -= self.w_adm(self.weight_grads, lr)
         self.bias -= self.b_adm(self.bias_grads, lr)
-        #self.weights -= lr * self.weight_grads
-        #self.bias -= lr * self.bias_grads
 
 
 class DenseLayer:
@@ -323,4 +324,3 @@ class DenseLayer:
 
     def _apply_grads(self, lr):
         self.weights -= self.w_adm(self.grads, lr)
-        # self.weights -= lr * self.grads
