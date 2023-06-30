@@ -102,9 +102,9 @@ def apply_derivative(X, activation):
     return 1
 
 
-def init_weights(weight_shape, inp_size, layer_indx, kernel_initializer='glorot_uniform'):
+def init_weights(weight_shape, inp_size, out_size, layer_indx, kernel_initializer='glorot_uniform'):
     if kernel_initializer == 'glorot_uniform':
-        std = np.sqrt(1 / np.sum(weight_shape))
+        std = np.sqrt(1 / (inp_size + out_size))
         return np.random.uniform(-std, std, size=weight_shape)
     elif kernel_initializer == 'he_normal':
         std = np.sqrt(1 / np.prod(inp_size))
@@ -150,8 +150,10 @@ class RNN:
         if type(inp_size) is np.ndarray:
             inp_size = inp_size.prod()
 
-        self.weights_inp = init_weights((inp_size, self.neurons), inp_size, layer_indx, self.kernel_initializer)
-        self.weights_h = init_weights((self.neurons, self.neurons), self.neurons, layer_indx, self.kernel_initializer)
+        self.weights_inp = init_weights((inp_size, self.neurons), inp_size, self.neurons, layer_indx,
+                                        self.kernel_initializer)
+        self.weights_h = init_weights((self.neurons, self.neurons), self.neurons, self.neurons, layer_indx,
+                                      self.kernel_initializer)
 
         if self.include_bias:
             self.bias = np.zeros(self.neurons)
@@ -222,7 +224,8 @@ class Conv2D:
         self.width = np.arange(0, inp_size[1] - self.kernel_size[1] + 1, self.stride[1])
         self.neurons = np.array([len(self.height), len(self.width), self.filters])  # output size
 
-        self.weights = init_weights(self.kernel_size + (inp_size[2], self.filters), inp_size, layer_indx,
+        out_size=(len(self.height)*len(self.width))
+        self.weights = init_weights(self.kernel_size + (inp_size[2], self.filters), inp_size, out_size, layer_indx,
                                     self.kernel_initializer)
         self.w_adm = Adam(shape=self.weights.shape)
 
@@ -297,7 +300,7 @@ class DenseLayer:
         if type(inp_size) is np.ndarray:
             inp_size = inp_size.prod()
 
-        self.weights = init_weights((inp_size, self.neurons), inp_size, layer_indx,
+        self.weights = init_weights((inp_size, self.neurons), inp_size, self.neurons, layer_indx,
                                     self.kernel_initializer)
 
         if self.include_bias:
