@@ -152,11 +152,14 @@ class RNN:
 
         self.weights_inp = init_weights((inp_size, self.neurons), inp_size, self.neurons, layer_indx,
                                         self.kernel_initializer)
+        self.w_in_adm = Adam(shape=self.weights_inp.shape)
         self.weights_h = init_weights((self.neurons, self.neurons), self.neurons, self.neurons, layer_indx,
                                       self.kernel_initializer)
+        self.w_h_adm = Adam(shape=self.weights_h.shape)
 
         if self.include_bias:
             self.bias = np.zeros(self.neurons)
+            self.b_adm = Adam(shape=self.bias.shape)
 
         self._reset_grads()
 
@@ -167,7 +170,8 @@ class RNN:
         if len(inp.shape) > 2:
             inp = inp.reshape(inp.shape[0], -1)
 
-        ans = self.ans_history[-1] @ self.weights_h
+        a1 = apply_activation(self.ans_history[-1], self.activation)
+        ans = a1 @ self.weights_h
         ans += inp @ self.weights_inp
         if self.include_bias:
             ans += self.bias
@@ -178,8 +182,8 @@ class RNN:
         return apply_activation(ans, self.activation)
 
     def _backpropagate(self, neuron_grads):
-        neuron_grads *= apply_derivative(self.ans_history[-1], self.activation)
         neuron_grads += self.next_timestep_grad
+        neuron_grads *= apply_derivative(self.ans_history[-1], self.activation)
         # saving the gradient coming from hidden state
         self.next_timestep_grad = neuron_grads @ self.weights_h.T
 
@@ -187,9 +191,11 @@ class RNN:
             neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
         self.grads_inp += g.mean(axis=0)
 
-        g = self.inp_history[-1].reshape(self.inp_history[-1].shape + (1,)) @ \
-            neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
-        self.grads_h += g.mean(axis=0)
+        if len(self.ans_history) > 1:
+            a1 = apply_activation(self.ans_history[-2], self.activation)
+            g = a1.reshape(self.inp_history[-1].shape + (1,)) @ \
+                neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
+            self.grads_h += g.mean(axis=0)
 
         if self.include_bias:
             self.grads_bias += neuron_grads.mean(axis=0)
@@ -200,10 +206,10 @@ class RNN:
         return neuron_grads @ self.weights_inp.T
 
     def _apply_grads(self, lr):
-        self.weights_h -= lr * self.grads_h
-        self.weights_inp -= lr * self.grads_inp
+        self.weights_inp -= self.w_in_adm(self.grads_inp, lr)
+        self.weights_h -= self.w_h_adm(self.grads_h, lr)
         if self.include_bias:
-            self.bias -= lr * self.grads_bias
+            self.bias -= self.b_adm(self.grads_bias, lr)
         self._reset_grads()
 
 

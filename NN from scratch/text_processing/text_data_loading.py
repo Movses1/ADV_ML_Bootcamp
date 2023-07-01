@@ -49,7 +49,7 @@ def load_data(new_embeddings=False):
         if not line:
             X[-1] = np.array(X[-1])
             break
-        if line == '\n':
+        if line == '\n' and len(X[-1]) != 0:
             X[-1] = np.array(X[-1])
             X.append([])
         else:

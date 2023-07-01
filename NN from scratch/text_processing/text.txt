@@ -133,24 +133,6 @@ Person A: Yes, very fun. Friends?
 Person B: Yes, friends. Goodbye!
 Person A: Goodbye, Mark! Take care!
 
-Dog A: Woof!
-Dog B: Woof woof!
-Dog A: Sniff?
-Dog B: Sniff sniff!
-Dog A: Chase?
-Dog B: Chase, yes! Run!
-Dog A: Bark!
-Dog B: Bark bark!
-Dog A: Play?
-Dog B: Play, fun! Fetch!
-Dog A: Ball?
-Dog B: Ball, yes! Catch!
-Dog A: Wag!
-Dog B: Wag wag!
-Dog A: Friend?
-Dog B: Friend, woof! Goodbye!
-Dog A: Goodbye! Woof woof!
-
 Person A: Hi!
 Person B: Hello!
 Person A: Good. You?
@@ -173,24 +155,6 @@ Person A: Yes, friend. Nice.
 Person B: Same. Time?
 Person A: Bye.
 Person B: Bye.
-
-Dog A: Woof!
-Dog B: Woof woof!
-Dog A: Sniff?
-Dog B: Sniff sniff!
-Dog A: Chase?
-Dog B: Chase, yes! Run!
-Dog A: Bark!
-Dog B: Bark bark!
-Dog A: Play?
-Dog B: Play, fun! Fetch!
-Dog A: Ball?
-Dog B: Ball, yes! Catch!
-Dog A: Wag!
-Dog B: Wag wag!
-Dog A: Friend?
-Dog B: Friend, woof! Goodbye!
-Dog A: Goodbye! Woof woof!
 
 Person A: Hi!
 Person B: Hello!
