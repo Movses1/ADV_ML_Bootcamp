@@ -170,9 +170,10 @@ class RNN:
         if len(inp.shape) > 2:
             inp = inp.reshape(inp.shape[0], -1)
 
-        a1 = apply_activation(self.ans_history[-1], self.activation)
-        ans = a1 @ self.weights_h
-        ans += inp @ self.weights_inp
+        ans = inp @ self.weights_inp
+        if len(self.ans_history)!=0:
+            a1 = apply_activation(self.ans_history[-1], self.activation)
+            ans += a1 @ self.weights_h
         if self.include_bias:
             ans += self.bias
 
@@ -193,7 +194,7 @@ class RNN:
 
         if len(self.ans_history) > 1:
             a1 = apply_activation(self.ans_history[-2], self.activation)
-            g = a1.reshape(self.inp_history[-1].shape + (1,)) @ \
+            g = a1.reshape(self.ans_history[-1].shape + (1,)) @ \
                 neuron_grads.reshape(neuron_grads.shape[0], 1, -1)
             self.grads_h += g.mean(axis=0)
 

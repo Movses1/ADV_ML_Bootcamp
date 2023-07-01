@@ -1,7 +1,8 @@
 import numpy as np
 from layers import DenseLayer, Dropout, BatchNormalization
 
-#np.random.seed(2)
+
+# np.random.seed(2)
 
 def calculate_loss(y_true, y_pred, loss='mse'):
     """
@@ -19,13 +20,8 @@ def calculate_loss(y_true, y_pred, loss='mse'):
         n_g = (-y_true / (y_pred + epsilon) + (1 - y_true) / (1 - y_pred + epsilon)) / 2
         l = -np.mean(y_true * np.log(y_pred + epsilon) + (1 - y_true) * np.log(1 - y_pred + epsilon)) / 2
     elif loss == 'cce':
-        """div = y_true / (y_pred + epsilon)
-        sm = div.sum(axis=tuple(np.arange(1, len(div.shape))))
-        sm = sm.reshape(sm.shape + tuple(1 for _ in div.shape[1:]))
-        n_g = -div + (sm - div)
-        l = -np.sum(y_true * np.log(y_pred))"""
         n_g = y_pred - y_true
-        l = -np.sum(y_true * np.log(y_pred))
+        l = -np.mean(np.sum(y_true * np.log(y_pred), axis=1))
 
     return n_g, l
 
@@ -85,3 +81,33 @@ class Model:
                     if type(self.layers[i]) not in [Dropout, BatchNormalization]:
                         self.layers[i]._apply_grads(lr)  # / scaling_factor)
             print('loss', losses / scaling_factor)
+
+    def fit_rnn(self, X, epochs=10000, batch_size=32, sequence_len=200, lr=0.001):
+        conv_sizes = np.array([i.shape[0] - sequence_len for i in X])  # num of start points in conversations
+
+        batch_seq = np.random.choice(len(conv_sizes), (epochs, batch_size),
+                                     p=conv_sizes / conv_sizes.sum())  # conversation indexes of each batch
+        x = np.zeros((batch_size, sequence_len, len(X[0][0])))  # batch of data we will be training on
+
+        for _, b_indxs in enumerate(batch_seq):
+            print('epoch', _, end=' ')
+            batch_grads = []
+            losses = 0
+            for i1, i in enumerate(b_indxs):
+                ind_start = np.random.randint(0, conv_sizes[i])
+                x[i1] = X[i][ind_start:ind_start + sequence_len]
+
+            for i in range(sequence_len - 1):
+                ans = self.predict(x[:, i], fitting=True)
+                n_g, l = calculate_loss(x[:, i + 1], ans, self.loss)
+                batch_grads.append(n_g / (sequence_len - 1))
+                losses += l
+
+            for neuron_grads in batch_grads[::-1]:
+                for i in range(len(self.layers) - 1, 0, -1):
+                    neuron_grads = self.layers[i]._backpropagate(neuron_grads)
+
+            for l in self.layers[1:]:
+                if type(l) not in [Dropout, BatchNormalization]:
+                    l._apply_grads(lr)
+            print('loss', losses / (sequence_len - 1))
