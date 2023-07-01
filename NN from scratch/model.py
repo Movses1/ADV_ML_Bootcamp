@@ -84,6 +84,7 @@ class Model:
 
     def fit_rnn(self, X, epochs=10000, batch_size=32, sequence_len=200, lr=0.001):
         conv_sizes = np.array([i.shape[0] - sequence_len for i in X])  # num of start points in conversations
+        inp_letter_cnt = self.layers[0].neurons[0]
 
         batch_seq = np.random.choice(len(conv_sizes), (epochs, batch_size),
                                      p=conv_sizes / conv_sizes.sum())  # conversation indexes of each batch
@@ -97,8 +98,8 @@ class Model:
                 ind_start = np.random.randint(0, conv_sizes[i])
                 x[i1] = X[i][ind_start:ind_start + sequence_len]
 
-            for i in range(sequence_len - 1):
-                ans = self.predict(x[:, i], fitting=True)
+            for i in range(sequence_len - inp_letter_cnt):
+                ans = self.predict(x[:, i:i + inp_letter_cnt], fitting=True)
                 n_g, l = calculate_loss(x[:, i + 1], ans, self.loss)
                 batch_grads.append(n_g / (sequence_len - 1))
                 losses += l

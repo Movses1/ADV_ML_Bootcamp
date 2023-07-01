@@ -38,7 +38,7 @@ def _load_embeddings(path=''):
     f = open(path + 'embeddings.json', "r")
     embeddings_dict = json.load(f)
     f.close()
-    emb_ind = list(range(len(embeddings_dict)+1))
+    emb_ind = list(range(len(embeddings_dict) + 1))
     for k, v in embeddings_dict.items():
         emb_ind[v] = k
     emb_ind = np.array(emb_ind)
@@ -55,7 +55,11 @@ def text_to_embedding(text):
 
 
 def embedding_to_text(emb):
-    indxs = np.argmax(emb, axis=1)
+    indxs = 0
+    if len(emb.shape) == 1:
+        indxs = np.argmax(emb)
+    else:
+        indxs = np.argmax(emb, axis=1)
     return emb_ind[indxs]
 
 
@@ -67,11 +71,11 @@ def load_data(path='', new_embeddings=False):
 
     X = [[]]
 
-    cnt=0
+    cnt = 0
     f = open(path + "text.txt", "r")
     while True:
-        cnt+=1
-        #print(cnt)
+        cnt += 1
+        # print(cnt)
         line = f.readline()
         if not line:
             X[-1] = np.array(X[-1])
