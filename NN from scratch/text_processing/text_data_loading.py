@@ -84,7 +84,7 @@ def embedding_to_text(emb):
     if len(emb.shape) == 1:
         indxs = np.argmax(emb)
     else:
-        indxs = np.argmax(emb, axis=1)
+        indxs = np.argmax(emb, axis=-1)
     return emb_ind[indxs]
 
 

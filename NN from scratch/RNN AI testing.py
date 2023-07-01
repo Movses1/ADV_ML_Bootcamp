@@ -4,6 +4,9 @@ from model import Model
 from layers import DenseLayer, Dropout, InpLayer, RNN, Conv2D
 import pickle
 
+from text_processing.text_data_loading import _load_embeddings
+
+#_load_embeddings('text_processing/')
 train_data = load_data('text_processing/')
 class_cnt = train_data[0].shape[1]
 inp_letters = 12
@@ -31,7 +34,7 @@ else:
 
 inp = []
 pred = 0
-preds = np.zeros((inp_letters, class_cnt))
+preds = np.zeros((1, inp_letters, class_cnt))
 
 
 def human_input():
@@ -46,9 +49,9 @@ def human_input():
 def make_preds(a):
     # a is the final datapoint
     global preds
-    preds[:-1] = preds[1:]
-    preds[-1] = a
-    return model.predict(np.array([preds]))
+    preds[0, :-1] = preds[0, 1:]
+    preds[0, -1] = a
+    return model.predict(preds)
 
 
 while True:
