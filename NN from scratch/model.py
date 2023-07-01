@@ -86,6 +86,7 @@ class Model:
         conv_sizes = np.array([i.shape[0] - sequence_len for i in X])  # num of start points in conversations
         inp_letter_cnt = self.layers[0].neurons[0]
 
+        print(conv_sizes)
         batch_seq = np.random.choice(len(conv_sizes), (epochs, batch_size),
                                      p=conv_sizes / conv_sizes.sum())  # conversation indexes of each batch
         x = np.zeros((batch_size, sequence_len, len(X[0][0])))  # batch of data we will be training on
@@ -101,7 +102,7 @@ class Model:
             for i in range(sequence_len - inp_letter_cnt):
                 ans = self.predict(x[:, i:i + inp_letter_cnt], fitting=True)
                 n_g, l = calculate_loss(x[:, i + 1], ans, self.loss)
-                batch_grads.append(n_g / (sequence_len - 1))
+                batch_grads.append(n_g / (sequence_len - inp_letter_cnt))
                 losses += l
 
             for neuron_grads in batch_grads[::-1]:
@@ -111,4 +112,4 @@ class Model:
             for l in self.layers[1:]:
                 if type(l) not in [Dropout, BatchNormalization]:
                     l._apply_grads(lr)
-            print('loss', losses / (sequence_len - 1))
+            print('loss', losses / (sequence_len - inp_letter_cnt))

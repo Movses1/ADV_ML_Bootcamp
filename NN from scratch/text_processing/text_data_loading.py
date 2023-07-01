@@ -1,8 +1,32 @@
 import numpy as np
 import json
+import os
 
 embeddings_dict = dict()
 emb_ind = []
+
+
+def transform_line(line):
+    line = line.lower()
+    line = line.replace('ã', 'a')
+    line = line.replace('â', 'a')
+    line = line.replace('ã', 'a')
+    line = line.replace('€', 'e')
+    line = line.replace('$', 's')
+    line = line.replace('‚', ',')
+    line = line.replace('“', '"')
+    line = line.replace('”', '"')
+    line = line.replace('’', "'")
+    line = line.replace('‘', "'")
+    line = line.replace('¦', '.')
+    line = line.replace(':', '.')
+    line = line.replace(';', '.')
+    line = line.replace('&', 'and')
+    for ind, i in enumerate(line):
+        if i.isnumeric():
+            line[ind] = ' '
+
+    return ''.join([i if ord(i) < 128 else ' ' for i in line])
 
 
 def _create_embeddings(path=''):
@@ -30,6 +54,7 @@ def _create_embeddings(path=''):
     out_file = open(path + 'embeddings.json', "w")
     json.dump(embeddings_dict, out_file)
     out_file.close()
+    print(embeddings_dict)
 
 
 def _load_embeddings(path=''):
@@ -72,31 +97,41 @@ def load_data(path='', new_embeddings=False):
     X = [[]]
 
     cnt = 0
-    f = open(path + "text.txt", "r")
-    while True:
-        cnt += 1
-        # print(cnt)
-        line = f.readline()
-        if not line:
-            X[-1] = np.array(X[-1])
-            break
-        if line == '\n' and len(X[-1]) != 0:
-            X[-1] = np.array(X[-1])
-            X.append([])
-        else:
-            sentence = text_to_embedding(line[line.find(':') + 2:-1].lower())
-            for letter in sentence:
-                X[-1].append(letter)
-            # adding the end of sentence embedding
-            X[-1].append(np.zeros(len(embeddings_dict) + 1))
-            X[-1][-1][-1] = 1
-    f.close()
-
+    lst_dir = 0
+    if path == '':
+        lst_dir = os.listdir()
+    else:
+        lst_dir = os.listdir(path)
+    for i in lst_dir:
+        if i[-4:] != '.txt' or i == 'text.txt':
+            continue
+        f = open(path + i, "r", encoding='utf-8')
+        while True:
+            cnt += 1
+            # print(cnt)
+            line = f.readline()
+            if not line:
+                X[-1] = np.array(X[-1])
+                X.append([])
+                break
+            if line == '\n' and len(X[-1]) != 0:
+                X[-1] = np.array(X[-1])
+                X.append([])
+            else:
+                sentence = text_to_embedding(line[:-1].lower())
+                for letter in sentence:
+                    X[-1].append(letter)
+                # adding the end of sentence embedding
+                X[-1].append(np.zeros(len(embeddings_dict) + 1))
+                X[-1][-1][-1] = 1
+        f.close()
+    while len(X[-1]) == 0:
+        X.pop()
     return X
 
 
 """
-data = load_data(new_embeddings=True)
+data = load_data(new_embeddings=False)
 cnt = 0
 for i in data:
     cnt += i.shape[0]
