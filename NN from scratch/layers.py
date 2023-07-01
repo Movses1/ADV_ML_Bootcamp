@@ -171,7 +171,7 @@ class RNN:
             inp = inp.reshape(inp.shape[0], -1)
 
         ans = inp @ self.weights_inp
-        if len(self.ans_history)!=0:
+        if len(self.ans_history) != 0:
             a1 = apply_activation(self.ans_history[-1], self.activation)
             ans += a1 @ self.weights_h
         if self.include_bias:
@@ -253,6 +253,9 @@ class Conv2D:
         inp has shape (batch, h, w, d)
         out has shape (batch, h, w, f)
         """
+        if len(inp.shape) == 3:
+            inp = inp.reshape(inp.shape + (1,))
+
         inp = inp[:, :, :, :, np.newaxis]
         ans = np.zeros(np.append(inp.shape[0], self.neurons))
         for h_o, h in enumerate(self.height):

@@ -8,20 +8,20 @@ train_data = load_data('text_processing/')
 class_cnt = train_data[0].shape[1]
 inp_letters = 10
 
-Train = False
+Train = True
 model = 0
 
 if Train:
-    model = Model([InpLayer(shape=np.array([inp_letters, class_cnt])),
-                   # Conv2D(kernel_size=(3, 3), stride=(1, 1), filters=10, activation='relu', k_init='he_normal'),
-                   RNN(neurons=100, activation='tanh', k_init='he_normal'),
-                   DenseLayer(neurons=50, activation='relu', k_init='he_normal'),
-                   RNN(neurons=100, activation='tanh', k_init='he_normal'),
-                   DenseLayer(neurons=50, activation='relu', k_init='he_normal'),
+    model = Model([InpLayer(shape=np.array([inp_letters, class_cnt, 1])),
+                   #Conv2D(kernel_size=(1, 4), stride=(1, 2), filters=30, activation='relu', k_init='he_normal'),
+                   DenseLayer(neurons=200, activation='relu', k_init='he_normal'),
+                   RNN(neurons=100, activation='tanh', k_init='glorot_uniform'),
+                   RNN(neurons=100, activation='tanh', k_init='glorot_uniform'),
+                   DenseLayer(neurons=80, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=class_cnt, activation='softmax', k_init='glorot_uniform')],  # classification
                   loss='cce',
                   )
-    model.fit_rnn(train_data, epochs=3000, batch_size=16, sequence_len=100, lr=1e-3)
+    model.fit_rnn(train_data, epochs=200, batch_size=16, sequence_len=50, lr=1e-3)
     with open('model1.pkl', 'wb') as out_file:
         pickle.dump(model, out_file)
     print('saved')
