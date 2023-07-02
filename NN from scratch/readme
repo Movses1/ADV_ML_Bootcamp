@@ -1,1 +1,0 @@
-Batch normalization is not properly implemented, if you want the model to be more stable just comment it out in testing
