@@ -25,8 +25,8 @@ if Train:
     class_cnt = train_data[0].shape[1]
     model = Model([InpLayer(shape=np.array([inp_letters, class_cnt, 1])),
                    # Conv2D(kernel_size=(1, 4), stride=(1, 2), filters=30, activation='relu', k_init='he_normal'),
-                   RNN(neurons=100, activation='tanh', k_init='glorot_uniform'),
-                   RNN(neurons=100, activation='tanh', k_init='glorot_uniform'),
+                   RNN(neurons=(100, 50), activation='tanh', k_init='glorot_uniform'),
+                   RNN(neurons=(100, 50), activation='tanh', k_init='glorot_uniform'),
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=class_cnt, activation='linear', k_init='glorot_uniform')],  # classification

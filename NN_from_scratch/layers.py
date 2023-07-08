@@ -130,7 +130,8 @@ class InpLayer:
 
 
 class RNN:
-    def __init__(self, activation='tanh', neurons=20, include_bias=True, optimizer='adam', k_init='glorot_uniform'):
+    def __init__(self, activation='tanh', neurons=(20, 20), include_bias=True, optimizer='adam',
+                 k_init='glorot_uniform'):
         self.activation = activation
         self.optimizer = optimizer
         self.kernel_initializer = k_init
@@ -138,6 +139,7 @@ class RNN:
         self.include_bias = include_bias
         self.weights_inp = []
         self.weights_h = []
+        self.dense = DenseLayer(neurons=neurons[1], activation='linear', k_init='glorot_uniform')
 
         self.grads_inp = []
         self.grads_h = []
@@ -148,28 +150,31 @@ class RNN:
         self.ans_history = []
 
     def _reset_grads(self):
-        self.next_timestep_grad = np.zeros(self.neurons)
+        self.next_timestep_grad = np.zeros(self.neurons[0])
         self.grads_inp = np.zeros(self.weights_inp.shape)
         self.grads_h = np.zeros(self.weights_h.shape)
         if self.include_bias:
-            self.grads_bias = np.zeros(self.neurons)
+            self.grads_bias = np.zeros(self.neurons[0])
 
     def _init_weights(self, inp_size, layer_indx):
         if type(inp_size) is np.ndarray:
             inp_size = inp_size.prod()
 
-        self.weights_inp = init_weights((inp_size, self.neurons), inp_size, self.neurons, layer_indx,
+        self.weights_inp = init_weights((inp_size, self.neurons[0]), inp_size, self.neurons[0], layer_indx,
                                         self.kernel_initializer)
         self.w_in_optim = create_optimizer(self.weights_inp.shape, self.optimizer)
-        self.weights_h = init_weights((self.neurons, self.neurons), self.neurons, self.neurons, layer_indx,
+        self.weights_h = init_weights((self.neurons[0], self.neurons[0]), self.neurons[0], self.neurons[0], layer_indx,
                                       self.kernel_initializer)
         self.w_h_optim = create_optimizer(self.weights_h.shape, self.optimizer)
 
         if self.include_bias:
-            self.bias = np.zeros(self.neurons)
+            self.bias = np.zeros(self.neurons[0])
             self.b_optim = create_optimizer(self.bias.shape, self.optimizer)
 
         self._reset_grads()
+
+        self.dense._init_weights(self.neurons[0], layer_indx)
+        return self.neurons[1]
 
     def _feedforward(self, inp):
         """
@@ -178,6 +183,7 @@ class RNN:
         if inp.ndim > 2:
             inp = inp.reshape(inp.shape[0], -1)
 
+        #print(inp.shape, self.weights_inp.shape)
         ans = inp @ self.weights_inp
         if len(self.ans_history) != 0:
             a1 = apply_activation(self.ans_history[-1], self.activation)
@@ -188,9 +194,14 @@ class RNN:
         self.inp_history.append(inp)
         self.ans_history.append(ans)
 
-        return apply_activation(ans, self.activation)
+        ans = apply_activation(ans, self.activation)
+
+        return self.dense._feedforward(ans)
 
     def _backpropagate(self, neuron_grads):
+
+        neuron_grads = self.dense._backpropagate(neuron_grads)
+
         neuron_grads += self.next_timestep_grad
         neuron_grads *= apply_derivative(self.ans_history[-1], self.activation)
         # saving the gradient coming from hidden state
@@ -215,6 +226,8 @@ class RNN:
         return neuron_grads @ self.weights_inp.T
 
     def _apply_grads(self, lr):
+        self.dense._apply_grads(lr)
+
         self.weights_inp -= self.w_in_optim(self.grads_inp, lr)
         self.weights_h -= self.w_h_optim(self.grads_h, lr)
         if self.include_bias:
@@ -256,6 +269,7 @@ class Conv2D:
             self.bias = np.zeros(self.filters)
             self.b_optim = create_optimizer(self.bias.shape, self.optimizer)
         self._reset_grads()
+        return self.neurons
 
     def _feedforward(self, inp):
         """
@@ -351,6 +365,7 @@ class DenseLayer:
             self.b_optim = create_optimizer(self.bias.shape, self.optimizer)
 
         self._reset_grads()
+        return self.neurons
 
     def _feedforward(self, inp):
         """
@@ -411,6 +426,7 @@ class MultiDense:
     def _init_weights(self, inp_size, layer_indx):
         for d in self.denses:
             d._init_weights(inp_size, layer_indx)
+        return self.neurons * self.out_cnt
 
     def _feedforward(self, X):
         y = self.denses[0]._feedforward(X)[:, np.newaxis, :]

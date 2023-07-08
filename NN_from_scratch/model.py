@@ -42,18 +42,16 @@ class Model:
         loss: mse for regression, bce and cce for binary/categorical cross-enropy
         """
         self.loss = loss
-        prev_n = 0
+        prev_n = layer_arr[0].neurons
         norm_cnt = 0
-        for ind, layer in enumerate(layer_arr):
-            if ind != 0:
-                layer.optimizer = optimizer
-                if type(layer) in [Dropout, BatchNormalization]:
-                    layer.neurons = prev_n
-                    norm_cnt += 1
-                else:
-                    layer._init_weights(prev_n, ind - norm_cnt)
+        for ind, layer in enumerate(layer_arr[1:]):
+            layer.optimizer = optimizer
+            if type(layer) in [Dropout, BatchNormalization]:
+                layer.neurons = prev_n
+                norm_cnt += 1
+            else:
+                prev_n = layer._init_weights(prev_n, ind - norm_cnt)
                 # print(layer.weights.shape)
-            prev_n = layer.neurons
         self.layers = layer_arr
 
     def predict(self, X, fitting=False):
