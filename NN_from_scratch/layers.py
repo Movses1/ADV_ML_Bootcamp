@@ -132,14 +132,19 @@ class InpLayer:
 class RNN:
     def __init__(self, activation='tanh', neurons=(20, 20), include_bias=True, optimizer='adam',
                  k_init='glorot_uniform'):
-        self.activation = activation
+        if type(activation) in [list, tuple]:
+            self.activation = activation[0]
+            self.activation_dense = activation[1]
+        else:
+            self.activation = activation
+            self.activation_dense = 'linear'
         self.optimizer = optimizer
         self.kernel_initializer = k_init
         self.neurons = neurons
         self.include_bias = include_bias
         self.weights_inp = []
         self.weights_h = []
-        self.dense = DenseLayer(neurons=neurons[1], activation='linear', k_init='glorot_uniform')
+        self.dense = DenseLayer(neurons=neurons[1], activation=self.activation_dense, k_init='glorot_uniform')
 
         self.grads_inp = []
         self.grads_h = []
@@ -183,7 +188,7 @@ class RNN:
         if inp.ndim > 2:
             inp = inp.reshape(inp.shape[0], -1)
 
-        #print(inp.shape, self.weights_inp.shape)
+        # print(inp.shape, self.weights_inp.shape)
         ans = inp @ self.weights_inp
         if len(self.ans_history) != 0:
             a1 = apply_activation(self.ans_history[-1], self.activation)

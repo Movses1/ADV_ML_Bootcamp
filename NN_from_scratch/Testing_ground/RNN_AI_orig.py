@@ -24,12 +24,13 @@ if Train:
     model = Model([InpLayer(shape=np.array([inp_letters, class_cnt, 1])),
                    #Conv2D(kernel_size=(1, 4), stride=(1, 2), filters=30, activation='relu', k_init='he_normal'),
                    RNN(neurons=(100, 50), activation='tanh', k_init='glorot_uniform'),
-                   RNN(neurons=(100, 50), activation='tanh', k_init='glorot_uniform'),
+                   RNN(neurons=(100, 50), activation=('tanh', 'linear'), k_init='glorot_uniform'),
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=class_cnt, activation='softmax', k_init='glorot_uniform')],  # classification
                   loss='cce', optimizer='adagrad',
                   )
+
     model.fit_rnn(train_data, epochs=200, batch_size=16, sequence_len=60, lr=1e-3)
     with open('model_orig.pkl', 'wb') as out_file:
         pickle.dump(model, out_file)
