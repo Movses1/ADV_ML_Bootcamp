@@ -29,9 +29,9 @@ if Train:
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=class_cnt, activation='softmax', k_init='glorot_uniform')],  # classification
-                  loss='cce',
+                  loss='cce', optimizer='adagrad',
                   )
-    model.fit_rnn(train_data, epochs=100, batch_size=16, sequence_len=60, lr=1e-3)
+    model.fit_rnn(train_data, epochs=2000, batch_size=16, sequence_len=60, lr=1e-3)
     with open('model_orig.pkl', 'wb') as out_file:
         pickle.dump(model, out_file)
     print('saved')

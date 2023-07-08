@@ -15,9 +15,9 @@ from text_processing.text_data_loading import _load_embeddings
 """
 # _load_embeddings('text_processing/')
 
-Train = True
+Train = False
 model = 0
-class_cnt =15
+class_cnt = 15
 inp_letters = 12
 
 if Train:
@@ -30,14 +30,14 @@ if Train:
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=100, activation='relu', k_init='he_normal'),
                    DenseLayer(neurons=class_cnt, activation='linear', k_init='glorot_uniform')],  # classification
-                  loss='mse',
+                  loss='cos', optimizer='adam'
                   )
-    model.fit_rnn(train_data, epochs=200, batch_size=16, sequence_len=60, lr=1e-3)
+    model.fit_rnn(train_data, epochs=100, batch_size=16, sequence_len=60, lr=1e-3)
     with open('model_emb.pkl', 'wb') as out_file:
         pickle.dump(model, out_file)
     print('saved')
 else:
-    class_cnt=15
+    class_cnt = 15
     _load_embeddings('text_processing/')
     with open(r"model_emb.pkl", "rb") as input_file:
         model = pickle.load(input_file)
@@ -74,8 +74,7 @@ while True:
         j = embedding_to_text(pred[0])[0]
         if j == '\n':
             break
-        print(j, end = '')
+        print(j, end='')
         pred = make_preds(pred)
-
 
     print(' |\n')

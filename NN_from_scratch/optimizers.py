@@ -1,8 +1,10 @@
 import numpy as np
 
+eps = 1e-8
+
 
 class Adam:
-    def __init__(self, beta_1=0.9, beta_2=0.999, shape=(1,)):
+    def __init__(self, shape=(1,), beta_1=0.9, beta_2=0.999):
         self.beta1 = beta_1
         self.beta2 = beta_2
         self.beta1_deg = beta_1
@@ -19,5 +21,14 @@ class Adam:
         self.beta1_deg *= self.beta1
         self.beta2_deg *= self.beta2
 
-        eps = 1e-8
         return lr * v_hat / (np.sqrt(r_hat) + eps)
+
+
+class AdaGrad:
+    def __init__(self, shape=(1,), beta=0.9):
+        self.r = np.zeros(shape)
+
+    def __call__(self, grad, lr=0.001):
+        self.r += grad ** 2
+
+        return lr * grad / (np.sqrt(self.r) + eps)

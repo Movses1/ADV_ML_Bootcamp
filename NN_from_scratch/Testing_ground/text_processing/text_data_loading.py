@@ -1,5 +1,6 @@
 import numpy as np
 import json
+from scipy.spatial.distance import cosine
 import os
 
 embeddings_dict = dict()
@@ -97,7 +98,8 @@ def embedding_to_text(emb):
         min_dist = np.inf
         for k, v in embeddings_dict.items():
             v = np.array(v)
-            dist = np.linalg.norm(e - v)
+            #dist = np.linalg.norm(e - v)
+            dist = cosine(v, e)
             if dist < min_dist:
                 min_dist = dist
                 min_k = k

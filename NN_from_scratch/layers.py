@@ -1,5 +1,5 @@
 import numpy as np
-from NN_from_scratch.optimizers import Adam
+from NN_from_scratch.optimizers import Adam, AdaGrad
 
 # np.random.seed(2)
 epsilon = 1e-8
@@ -114,6 +114,13 @@ def init_weights(weight_shape, inp_size, out_size, layer_indx, kernel_initialize
         return np.random.normal(0, std, size=weight_shape)
 
 
+def create_optimizer(shape, optimizer):
+    if optimizer == 'adam':
+        return Adam(shape=shape)
+    elif optimizer == 'adagrad':
+        return AdaGrad(shape=shape)
+
+
 class InpLayer:
     def __init__(self, shape):
         self.neurons = shape
@@ -123,8 +130,9 @@ class InpLayer:
 
 
 class RNN:
-    def __init__(self, activation='tanh', neurons=20, include_bias=True, k_init='glorot_uniform'):
+    def __init__(self, activation='tanh', neurons=20, include_bias=True, optimizer='adam', k_init='glorot_uniform'):
         self.activation = activation
+        self.optimizer = optimizer
         self.kernel_initializer = k_init
         self.neurons = neurons
         self.include_bias = include_bias
@@ -152,14 +160,14 @@ class RNN:
 
         self.weights_inp = init_weights((inp_size, self.neurons), inp_size, self.neurons, layer_indx,
                                         self.kernel_initializer)
-        self.w_in_adm = Adam(shape=self.weights_inp.shape)
+        self.w_in_optim = create_optimizer(self.weights_inp.shape, self.optimizer)
         self.weights_h = init_weights((self.neurons, self.neurons), self.neurons, self.neurons, layer_indx,
                                       self.kernel_initializer)
-        self.w_h_adm = Adam(shape=self.weights_h.shape)
+        self.w_h_optim = create_optimizer(self.weights_h.shape, self.optimizer)
 
         if self.include_bias:
             self.bias = np.zeros(self.neurons)
-            self.b_adm = Adam(shape=self.bias.shape)
+            self.b_optim = create_optimizer(self.bias.shape, self.optimizer)
 
         self._reset_grads()
 
@@ -207,17 +215,18 @@ class RNN:
         return neuron_grads @ self.weights_inp.T
 
     def _apply_grads(self, lr):
-        self.weights_inp -= self.w_in_adm(self.grads_inp, lr)
-        self.weights_h -= self.w_h_adm(self.grads_h, lr)
+        self.weights_inp -= self.w_in_optim(self.grads_inp, lr)
+        self.weights_h -= self.w_h_optim(self.grads_h, lr)
         if self.include_bias:
-            self.bias -= self.b_adm(self.grads_bias, lr)
+            self.bias -= self.b_optim(self.grads_bias, lr)
         self._reset_grads()
 
 
 class Conv2D:
     def __init__(self, activation='linear', kernel_size=(3, 3), stride=(1, 1), filters=10, include_bias=True,
-                 k_init='glorot_uniform'):
+                 optimizer='adam', k_init='glorot_uniform'):
         self.activation = activation
+        self.optimizer = optimizer
         self.kernel_initializer = k_init
         self.kernel_size = kernel_size
         self.stride = stride
@@ -241,11 +250,11 @@ class Conv2D:
 
         self.weights = init_weights(self.kernel_size + (inp_size[2], self.filters), inp_size, self.neurons.prod(),
                                     layer_indx, self.kernel_initializer)
-        self.w_adm = Adam(shape=self.weights.shape)
+        self.w_optim = create_optimizer(self.weights.shape, self.optimizer)
 
         if self.include_bias:
             self.bias = np.zeros(self.filters)
-            self.b_adm = Adam(shape=(self.bias.shape))
+            self.b_optim = create_optimizer(self.bias.shape, self.optimizer)
         self._reset_grads()
 
     def _feedforward(self, inp):
@@ -299,19 +308,20 @@ class Conv2D:
         return inp_grads
 
     def _apply_grads(self, lr):
-        self.weights -= self.w_adm(self.weight_grads, lr)
+        self.weights -= self.w_optim(self.weight_grads, lr)
         if self.include_bias:
-            self.bias -= self.b_adm(self.bias_grads, lr)
+            self.bias -= self.b_optim(self.bias_grads, lr)
         self._reset_grads()
 
 
 class DenseLayer:
-    def __init__(self, activation='linear', neurons=64, include_bias=True, k_init='glorot_uniform'):
+    def __init__(self, activation='linear', neurons=64, include_bias=True, k_init='glorot_uniform', optimizer='adam'):
         """
         activation can be: 'relu', 'sigmoid' everything else is treated as 'linear'
         """
         self.neurons = neurons
         self.kernel_initializer = k_init
+        self.optimizer = optimizer
         self.include_bias = include_bias
         self.activation = activation
         self.weights = []
@@ -330,15 +340,15 @@ class DenseLayer:
     def _init_weights(self, inp_size, layer_indx):
         if type(inp_size) is np.ndarray:
             inp_size = inp_size.prod()
-        self.layer_indx=layer_indx
+        self.layer_indx = layer_indx
 
         self.weights = init_weights((inp_size, self.neurons), inp_size, self.neurons, layer_indx,
                                     self.kernel_initializer)
-        self.w_adm = Adam(shape=self.weights.shape)
+        self.w_optim = create_optimizer(self.weights.shape, self.optimizer)
 
         if self.include_bias:
             self.bias = np.zeros(self.neurons)
-            self.b_adm = Adam(shape=self.bias.shape)
+            self.b_optim = create_optimizer(self.bias.shape, self.optimizer)
 
         self._reset_grads()
 
@@ -373,9 +383,9 @@ class DenseLayer:
         return neuron_grads @ self.weights.T
 
     def _apply_grads(self, lr):
-        self.weights -= self.w_adm(self.weight_grads, lr)
+        self.weights -= self.w_optim(self.weight_grads, lr)
         if self.include_bias:
-            self.bias -= self.b_adm(self.bias_grads, lr)
+            self.bias -= self.b_optim(self.bias_grads, lr)
         self._reset_grads()
         # this is used for saving autoencoder weights
         """if self.cntr % 10000 == 0 and self.layer_indx in [0,1,2,3]:
@@ -387,10 +397,12 @@ class DenseLayer:
 
 
 class MultiDense:
-    def __init__(self, activation='softmax', out_cnt=2, neurons=38, include_bias=True, k_init='glorot_uniform'):
+    def __init__(self, activation='softmax', out_cnt=2, neurons=38, include_bias=True, optimizer='adam',
+                 k_init='glorot_uniform'):
         self.neurons = neurons
         self.out_cnt = out_cnt
-        self.denses = [DenseLayer(activation, neurons, include_bias, k_init) for _ in range(out_cnt)]
+        self.denses = [DenseLayer(activation, neurons,
+                                  include_bias, k_init, optimizer) for _ in range(out_cnt)]
 
     def _reset_grads(self):
         for d in self.denses:

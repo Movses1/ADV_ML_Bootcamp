@@ -1,4 +1,5 @@
 import numpy as np
+
 from NN_from_scratch.layers import Dropout, BatchNormalization
 
 
@@ -16,13 +17,18 @@ def calculate_loss(y_true, y_pred, loss='mse'):
     if loss == 'mse':
         n_g = 2 * (y_pred - y_true) / y_true.shape[1]
         l = np.mean((y_pred - y_true) ** 2)
+    elif loss == 'cos':
+        A = np.linalg.norm(y_true, axis=1).reshape(-1, 1)
+        B = np.linalg.norm(y_pred, axis=1).reshape(-1, 1)
+        l = (y_true[:, np.newaxis] @ y_pred[:, :, np.newaxis]).reshape(-1, 1) / (A * B)
+        n_g = -y_true / (A * B) + y_pred * l / (A**2)
+        l = 1-np.mean(l)
     elif loss == 'bce':
         n_g = (-y_true / (y_pred + epsilon) + (1 - y_true) / (1 - y_pred + epsilon)) / 2
         l = -np.mean(y_true * np.log(y_pred + epsilon) + (1 - y_true) * np.log(1 - y_pred + epsilon)) / 2
     elif loss == 'cce':
         n_g = y_pred - y_true
         if y_true.ndim > 2:
-            #n_g /= y_true.shape[1]
             l -= np.mean(np.sum(y_true * np.log(y_pred), axis=(-2, -1)))
         else:
             l = -np.mean(np.sum(y_true * np.log(y_pred), axis=-1))
@@ -31,7 +37,7 @@ def calculate_loss(y_true, y_pred, loss='mse'):
 
 
 class Model:
-    def __init__(self, layer_arr, loss='mse'):
+    def __init__(self, layer_arr, loss='mse', optimizer='adam'):
         """
         loss: mse for regression, bce and cce for binary/categorical cross-enropy
         """
@@ -40,6 +46,7 @@ class Model:
         norm_cnt = 0
         for ind, layer in enumerate(layer_arr):
             if ind != 0:
+                layer.optimizer = optimizer
                 if type(layer) in [Dropout, BatchNormalization]:
                     layer.neurons = prev_n
                     norm_cnt += 1
@@ -79,7 +86,6 @@ class Model:
                 n_g, l = calculate_loss(Y[indx], ans, self.loss)
                 neuron_grads = n_g
                 losses += l
-                #print(l)
 
                 for i in range(len(self.layers) - 1, 0, -1):
                     neuron_grads = self.layers[i]._backpropagate(neuron_grads)
