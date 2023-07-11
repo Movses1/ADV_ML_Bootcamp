@@ -431,6 +431,7 @@ class MultiDense:
     def _init_weights(self, inp_size, layer_indx):
         for d in self.denses:
             d._init_weights(inp_size, layer_indx)
+        self._reset_grads()
         return self.neurons * self.out_cnt
 
     def _feedforward(self, X):
@@ -449,3 +450,4 @@ class MultiDense:
     def _apply_grads(self, lr):
         for d in self.denses:
             d._apply_grads(lr)
+        self._reset_grads()
