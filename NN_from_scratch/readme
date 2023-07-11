@@ -1,1 +1,10 @@
-Batch normalization is not properly implemented, if you want the model to be more stable just comment it out in testing
+TF_GradientTape - This contains the same implementation of forward propagation as the regular implementation but the backpropagation is done using gradient tape.
+
+Testing_groud - Here is all the testing of different layers on different datasets.
+
+layers.py - contains all the layers calsses (RNN, Conv2D, Dense, MultiDense) and different activation functions.
+
+model.py - here is the model class that implements the weight initialization, model fiting, prediction. It also contain different loss functions:
+mse, binary/categorica cross-entropy, cosine loss.
+
+optimizers.py - contains Adam and AdaGrad optimizers.
