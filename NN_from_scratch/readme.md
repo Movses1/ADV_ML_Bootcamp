@@ -1,5 +1,5 @@
 ## TF_GradientTape 
-This directory contains the same implementation of forward propagation as the regular implementation but the backpropagation is done using gradient tape.
+This directory contains the same implementation of forward propagation as the regular implementation but the backpropagation is done using **gradient tape**.
 
 ## Testing_groud 
 Here is all the testing of different layers on different datasets.
@@ -17,4 +17,4 @@ here is the model class that implements the weight initialization, model fiting,
 **mse, binary/categorica cross-entropy, cosine loss.**
 
 ## optimizers.py
-contains Adam and AdaGrad optimizers.
+contains **Adam** and **AdaGrad** optimizers.
