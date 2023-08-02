@@ -1,4 +1,4 @@
-repot and model performance plots come after the training loop
+**repot and model performance plots come after the training loop**
 
 
 model1 - LSTM_v1.h5
