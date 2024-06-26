@@ -5,6 +5,6 @@ housing_prices_training.ipynb does feature engineering and model hyperparameter 
 model_inference\inference.ipynb is used for testing the final model
 
 Results RMSE
-1.  19353 (me)
+1. 19353 (me)
 2. 21000
-3. 3 21500
+3. 21500
